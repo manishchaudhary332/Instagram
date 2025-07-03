@@ -45,7 +45,7 @@ export const login = async (req, res) => {
     }
 
     // Check if user exists
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       return res
         .status(401)
@@ -72,7 +72,7 @@ export const login = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = await jwt.sign({userId: user._id}, process.env.JWT_SECRET,{expiresIn:"1d"});
+    const token = await jwt.sign({userId: user._id}, process.env.SECRET_KEY,{expiresIn:"1d"});
     return res.cookie('token',token,{httpOnly:true, sameSite:'strict',maxAge:1*24*60*60*1000}).json({
         message:`Wlcome Back ${user.username}`,
         success:true,
@@ -99,7 +99,7 @@ export const logout = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const {id: userId } = req.params;
     if (!userId) {
       return res
         .status(401)
@@ -107,7 +107,7 @@ export const getProfile = async (req, res) => {
     }
 
     // Check if user exists
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("-password")
     if (!user) {
       return res
         .status(401)
@@ -139,7 +139,7 @@ export const editProfile = async (req, res) => {
     }
 
     // Check if user exists
-    let user = await User.findById(userId);
+    let user = await User.findById(userId).select("-password");
     if (!user) {
       return res
         .status(401)
@@ -164,7 +164,7 @@ export const editProfile = async (req, res) => {
 
 
 
-    export const getSuggestedUser = async (req, res) => {
+    export const getSuggestedUsers = async (req, res) => {
       try {
         
         const suggestedUsers = await User.find({_id:{$ne:req.id}}).select("-password")
@@ -185,10 +185,10 @@ export const editProfile = async (req, res) => {
     };
 
 
-    export const followOrUnfollow = async (req, res) => {
+    export const followorunfollow = async (req, res) => {
         try{
             const followKrneWala = req.id;
-            const jsikoFollowKarunga= req.params.userId;
+            const jsikoFollowKarunga= req.params.id;
             if(followKrneWala === jsikoFollowKarunga){
                 return res.status(400).json({message:"You cannot follow/unfollow yourself", success:false})
             }

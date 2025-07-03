@@ -12,7 +12,7 @@ const userShcema = new mongoose.Schema({
     },
     password:{
         type:String,
-        required,
+        required:true,
     },
     profilePicture:{
         type:String,
@@ -48,4 +48,6 @@ const userShcema = new mongoose.Schema({
     }]
 },{timestamps:true})
 
-export const User  = mongoose.model("User",userShcema)
+ const User  = mongoose.model("User",userShcema)
+
+ export default User;

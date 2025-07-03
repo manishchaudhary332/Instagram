@@ -4,13 +4,17 @@ import cookieParser from "cookie-parser"
 const app = express()
 import dotenv from "dotenv"
 import connectDB from "./utils/db.js"
+import userRoute from "./routes/user.route.js"
+
+
+
 const PORT = process.env.PORT || 3000;
 
 dotenv.config({})
 
 app.get("/",(req,res)=>{
     return res.status(200).json({
-            message:"I AM coming From Balcend",
+            message:"I AM coming From Backend",
             success:true,
     })
     
@@ -24,6 +28,8 @@ const corsOptions = {
     Credentials:true 
 }
 app.use(cors(corsOptions))
+
+app.use("/api/v1/user",userRoute)
 
 
 app.listen(PORT,()=>{
