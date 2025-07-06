@@ -14,6 +14,13 @@ const PORT = process.env.PORT || 3000;
 
 dotenv.config({})
 
+
+app.use(cors({
+  origin: "http://localhost:5173", // frontend Vite dev server port
+  credentials: true
+}));
+
+
 app.get("/",(req,res)=>{
     return res.status(200).json({
             message:"I AM coming From Backend",
