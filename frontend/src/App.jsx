@@ -1,5 +1,5 @@
 
-import { Home } from 'lucide-react';
+import  Home  from './components/Home';
 import Login from './components/Login';
 import MainLayout from './components/MainLayout';
 import Signup from './components/SignUp'
@@ -35,9 +35,9 @@ function App() {
 
 
   return (
-    <>
+    
      <RouterProvider router={browserRouter}/>
-    </>
+    
   )
 }
 

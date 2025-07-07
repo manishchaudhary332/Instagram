@@ -3,10 +3,11 @@ import Posts from './Posts'
 
 const Feed = () => {
   return (
-    <div className='flex-1 my-8 flex flex-col itms-center justify-center '>
+    <div className='flex-1  my-8 flex flex-col items-center pl-[20%]'>
         <Posts/>
     </div>
   )
 }
 
-export default Feed
+export default Feed 
+

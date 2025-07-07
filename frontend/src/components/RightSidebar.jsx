@@ -2,8 +2,11 @@ import React from 'react'
 
 const RightSidebar = () => {
   return (
-    <div>RightSidebar</div>
+    <div >
+      RightSidebar
+    </div>
   )
 }
+
 
 export default RightSidebar
