@@ -42,7 +42,8 @@ export const addNewPost = async (req, res) => {
                 await user.save();
             } 
 
-            await post.populate({path: "author", select: "-password"});
+           await post.populate({ path: "author", select: "username profilePicture" });
+
 
             return res.status(201).json({
                 message: "Post created successfully",
@@ -58,9 +59,9 @@ export const addNewPost = async (req, res) => {
 
 export const getAllPost = async (req, res) => {
     try {
-        const posts = await Post.find()
+        const posts = await Post.find({})
             .sort({ createdAt: -1 })
-            .populate({ path: "author", select: "username,profilePicture" })
+            .populate({ path: "author", select: "username profilePicture" })
             .populate({ path: "comments",
                         short: { createdAt: -1 },
                         populate: { path: "author", select: "username profilePicture" }
@@ -157,42 +158,46 @@ export const dislikePost = async (req, res) => {
 
 
 export const addComment = async (req, res) => {
-    try {
-        const postId = req.params.id;
-        const commentKrneWalaUserKiId  = req.id;
-        const {text}  = req.body;
+  try {
+    const postId = req.params.id;
+    const commentKrneWalaUserKiId = req.id;
+    const { text } = req.body;
 
-        if (!comment) {
-            return res.status(400).json({ message: "Comment is required", success: false });
-        }
-
-        const post = await Post.findById(postId);
-        if (!text) {
-            return res.status(404).json({ message: "text not found", success: false });
-        }
-
-        const comment = await Comment.create({
-            text,
-            author: commentKrneWalaUserKiId,
-            post: postId,
-        }).populate({
-            path: "author",
-            select: "username profilePicture"
-        })
-        post.comments.push(comment._id);
-        await post.save();
-
-        return res.status(201).json({
-            message: "Comment added successfully",
-            comment,
-            success: true,
-        });
-        
-        }catch (error) {
-            console.log(error);
-            
-        }
+    if (!text || text.trim() === "") {
+      return res.status(400).json({ message: "Comment text is required", success: false });
     }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found", success: false });
+    }
+
+    const comment = await Comment.create({
+      text,
+      author: commentKrneWalaUserKiId,
+      post: postId,
+    });
+
+    await comment.populate({
+      path: "author",
+      select: "username profilePicture",
+    });
+
+    post.comments.push(comment._id);
+    await post.save();
+
+    return res.status(201).json({
+      message: "Comment added successfully",
+      comment,
+      success: true,
+    });
+
+  } catch (error) {
+    console.log("Error in addComment controller:", error);
+    return res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
 
     export const getCommentsOfPost = async (req, res) => {
          try{
@@ -228,7 +233,7 @@ export const addComment = async (req, res) => {
                 return res.status(403).json({ message: "You are not authorized to delete this post", success: false });
             }
 
-            await post.findByIdAndDelete(postId);
+            await Post.findByIdAndDelete(postId);
             // remove post id from user posts
             let user = await User.findById(authorId);
             user.posts = user.posts.filter((post) => post.toString() !== postId);

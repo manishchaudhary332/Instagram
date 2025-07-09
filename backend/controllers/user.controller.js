@@ -35,7 +35,6 @@ export const register = async (req, res) => {
   }
 };
 
-
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -61,56 +60,58 @@ export const login = async (req, res) => {
         .json({ message: "Incorrect Email or Password", success: false });
     }
 
-    
-    const token = await jwt.sign({userId: user._id}, process.env.SECRET_KEY,{expiresIn:"1d"});
+    const token = await jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "1d",
+    });
 
     const populatedPosts = await Promise.all(
-      user.posts.map( async(postId)=>{
-        const post = await Post.findById(postId)
-        if(post.author.equals(user._id)){
+      user.posts.map(async (postId) => {
+        const post = await Post.findById(postId);
+        if (post.author.equals(user._id)) {
           return post;
         }
         return null;
       })
-    )
+    );
     user = {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        bio: user.bio,
-        followers: user.followers,
-        following: user.following,
-        posts: user.posts,
-    }
-   
-    return res.cookie('token',token,{httpOnly:true, sameSite:'strict',maxAge:1*24*60*60*1000}).json({
-        message:`Wlcome Back ${user.username}`,
-        success:true,
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      bio: user.bio,
+      followers: user.followers,
+      following: user.following,
+      posts: user.posts,
+    };
+
+    return res.cookie("token", token, {
+        httpOnly: true,
+        secure: false, // ⚠️ Don't use true on localhost
+        sameSite: "lax", // ✅ LAX works better with localhost
+        maxAge: 24 * 60 * 60 * 1000,
+      }).json({
+        message: `Wlcome Back ${user.username}`,
+        success: true,
         user,
-
-    })
-
+      });
   } catch (error) {
     console.error("Error in login controller:", error);
   }
-}
-
+};
 
 export const logout = async (req, res) => {
   try {
     return res
-      .clearCookie("token","", {maxAge:0})
+      .clearCookie("token", "", { maxAge: 0 })
       .json({ message: "Logout successfully", success: true });
   } catch (error) {
     console.error("Error in logout controller:", error);
   }
 };
 
-
 export const getProfile = async (req, res) => {
   try {
-    const {id: userId } = req.params;
+    const { id: userId } = req.params;
     if (!userId) {
       return res
         .status(401)
@@ -118,7 +119,7 @@ export const getProfile = async (req, res) => {
     }
 
     // Check if user exists
-    const user = await User.findById(userId).select("-password")
+    const user = await User.findById(userId).select("-password");
     if (!user) {
       return res
         .status(401)
@@ -133,8 +134,7 @@ export const getProfile = async (req, res) => {
   } catch (error) {
     console.error("Error in getProfile controller:", error);
   }
-}
-
+};
 
 export const editProfile = async (req, res) => {
   try {
@@ -144,9 +144,9 @@ export const editProfile = async (req, res) => {
     const profilePicture = req.file;
     let cloudResponse;
 
-    if(profilePicture) {
+    if (profilePicture) {
       const filrUri = getDataUri(profilePicture);
-      cloudResponse =  await cloudinary.uploader.upload(filrUri)
+      cloudResponse = await cloudinary.uploader.upload(filrUri);
     }
 
     // Check if user exists
@@ -155,10 +155,10 @@ export const editProfile = async (req, res) => {
       return res
         .status(401)
         .json({ message: "User not found", success: false });
-    }    
-    if(bio) user.bio = bio;
-    if(gender) user.gender = gender;
-    if(profilePicture) user.prodilePicture = cloudResponse.secure_url;
+    }
+    if (bio) user.bio = bio;
+    if (gender) user.gender = gender;
+    if (profilePicture) user.profilePicture = cloudResponse.secure_url;
 
     await user.save();
 
@@ -167,69 +167,106 @@ export const editProfile = async (req, res) => {
       success: true,
       user,
     });
-
-
-}catch (error) {
+  } catch (error) {
     console.error("Error in updateProfile controller:", error);
-    }}
+  }
+};
 
-
-
-    export const getSuggestedUsers = async (req, res) => {
-      try {
-        
-        const suggestedUsers = await User.find({_id:{$ne:req.id}}).select("-password")
-        if (!suggestedUsers) {
-          return res
-            .status(400)
-            .json({ message: "currently do not have any users", success: false });
-        }
-  
-        return res.status(200).json({
-          message: "Suggested users fetched successfully",
-          success: true,
-          users: suggestedUsers,
-        });
-      } catch (error) {
-        console.error("Error in getSuggestedUser controller:", error);
-      }
-    };
-
-
-    export const followorunfollow = async (req, res) => {
-        try{
-            const followKrneWala = req.id;
-            const jsikoFollowKarunga= req.params.id;
-            if(followKrneWala === jsikoFollowKarunga){
-                return res.status(400).json({message:"You cannot follow/unfollow yourself", success:false})
-            }
-
-            const user = await User.findById(followKrneWala);
-            const targetUser = await User.findById(jsikoFollowKarunga); 
-
-            if(!user || !targetUser){
-                return res.status(400).json({message:"User not found", success:false})
-            }
-
-            // check krna he ki follow krna he ya unfollow
-            const isFollowing = user.following.includes(jsikoFollowKarunga);
-            if(isFollowing){
-                await Promise.all([
-                    User.updateOne({_id: followKrneWala}, {$pull:{following:jsikoFollowKarunga}}),
-                    User.updateOne({_id: jsikoFollowKarunga}, {$pull:{followers:followKrneWala}}), 
-
-                ])
-                return res.status(200).json({message:"Unfollowed successfully", success:true})
-            }else{
-                await Promise.all([
-                    User.updateOne({_id: followKrneWala}, {$push:{following:jsikoFollowKarunga}}),
-                    User.updateOne({_id: jsikoFollowKarunga}, {$push:{followers:followKrneWala}}), 
-
-                ])
-                return res.status(200).json({message:"Followed successfully", success:true})
-            }
-
-        }catch (error) {
-            console.error("Error in followOrUnfollow controller:", error);
-        }
+export const getSuggestedUsers = async (req, res) => {
+  try {
+    const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select(
+      "-password"
+    );
+    if (!suggestedUsers) {
+      return res
+        .status(400)
+        .json({ message: "currently do not have any users", success: false });
     }
+
+    return res.status(200).json({
+      message: "Suggested users fetched successfully",
+      success: true,
+      users: suggestedUsers,
+    });
+  } catch (error) {
+    console.error("Error in getSuggestedUser controller:", error);
+  }
+};
+
+export const followorunfollow = async (req, res) => {
+  try {
+    const followKrneWala = req.id;
+    const jsikoFollowKarunga = req.params.id;
+    if (followKrneWala === jsikoFollowKarunga) {
+      return res.status(400).json({
+        message: "You cannot follow/unfollow yourself",
+        success: false,
+      });
+    }
+
+    const user = await User.findById(followKrneWala);
+    const targetUser = await User.findById(jsikoFollowKarunga);
+
+    if (!user || !targetUser) {
+      return res
+        .status(400)
+        .json({ message: "User not found", success: false });
+    }
+
+    // check krna he ki follow krna he ya unfollow
+    const isFollowing = user.following.includes(jsikoFollowKarunga);
+    if (isFollowing) {
+      await Promise.all([
+        User.updateOne(
+          { _id: followKrneWala },
+          { $pull: { following: jsikoFollowKarunga } }
+        ),
+        User.updateOne(
+          { _id: jsikoFollowKarunga },
+          { $pull: { followers: followKrneWala } }
+        ),
+      ]);
+      return res
+        .status(200)
+        .json({ message: "Unfollowed successfully", success: true });
+    } else {
+      await Promise.all([
+        User.updateOne(
+          { _id: followKrneWala },
+          { $push: { following: jsikoFollowKarunga } }
+        ),
+        User.updateOne(
+          { _id: jsikoFollowKarunga },
+          { $push: { followers: followKrneWala } }
+        ),
+      ]);
+      return res
+        .status(200)
+        .json({ message: "Followed successfully", success: true });
+    }
+  } catch (error) {
+    console.error("Error in followOrUnfollow controller:", error);
+  }
+};
+
+export const checkAuth = async (req, res) => {
+  try {
+    const user = await User.findById(req.id).select("-password");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+    }
+
+    return res.status(200).json({
+      message: "User authenticated",
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Error in checkAuth controller:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", success: false });
+  }
+};
